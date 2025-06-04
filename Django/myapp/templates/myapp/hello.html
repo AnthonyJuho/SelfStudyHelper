@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bootstrap 테스트 페이지</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'myapp/css/bootstrap.min.css' %}">
+</head>
+<body>
+
+<!-- 네비게이션 바 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">MySite</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- 본문 -->
+<div class="container mt-5">
+    <h1 class="text-primary">Hello, Bootstrap!</h1>
+    <p class="lead">이 페이지는 Bootstrap이 잘 적용되었는지 확인하기 위한 예제입니다.</p>
+
+    <!-- 버튼 -->
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        모달 열기
+    </button>
+</div>
+
+<!-- 모달 (Modal) -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">모달 제목</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        이건 Bootstrap 모달입니다. JS가 잘 작동한다는 뜻이에요!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS (bundle: popper 포함) -->
+<script src="{% static 'myapp/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
