@@ -1,0 +1,181 @@
+{% load static %}
+{% include 'myapp/common/header.html' %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>자습무단이석 체크</title>
+    <link href="{% static 'myapp/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .block {
+            width: 80px;
+            height: 48px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 3px;
+            background-color:rgb(148, 236, 142);
+            color: black;
+            border-radius: 6px;
+            border-color: black;
+            cursor: pointer;
+            font-size: 80%;
+            overflow: hidden;
+        }
+        .bg-normal {
+            background-color: rgb(148, 236, 142); /* 밝은 초록 */
+        }
+        .bg-leave {
+            background-color: #fff3b0; /* 밝은 노랑 */
+            pointer-events: none; /* 클릭 불가 */
+        }
+        .bg-absent {
+            background-color: #ffadad; /* 밝은 빨강 */
+        }
+        .empty {
+            width: 80px;
+            height: 48px;
+            margin: 3px;
+            background-color: transparent;
+        }
+        .room-grid {
+            display: flex;
+            flex-direction: column;
+            width: max-content;
+        }
+        .room-row {
+            display: flex;
+        }
+        .scroll-container {
+          overflow-x: auto;
+          width: 100%;
+      }
+    </style>
+</head>
+<body class="container py-4">
+    <form method="get" class="row g-3 mb-3">
+        <div class="col-md-3">
+            <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">날짜 변경</button>
+        </div>
+    </form>
+    
+    <h2 class="mb-4">교실 선택</h2>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="roomTabs" role="tablist">
+        {% for room_name, data in rooms.items %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if forloop.first %}active{% endif %}" id="tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#room-{{ forloop.counter }}" type="button" role="tab">
+                {{ room_name }}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="mt-4">
+        <button class="btn btn-danger me-2" onclick="markAllAbsent()">전체 무단이석 처리</button>
+        <button class="btn btn-secondary" onclick="cancelAllAbsent()">전체 무단이석 취소</button>
+      </div>
+
+    <!-- Tab content -->
+    <div class="tab-content" id="roomTabsContent">
+        {% for room_name, data in rooms.items %}
+        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="room-{{ forloop.counter }}" role="tabpanel">
+            <div class="room-grid">
+                {% for row in data %}
+                <div class="room-row">
+                    {% for cell in row %}
+                        {% if cell.0 == 'S' %}
+                        {% comment %} <div class="block {% if cell.3 == 'absent' %}bg-danger{% elif cell.3 == 'leave' %}bg-warning text-dark{% else %}bg-success{% endif %}" onclick="markAbsent('{{ cell.1 }}')" data-id="{{ cell.1 }}">
+                            {{ cell.1 }}<br>
+                            {{ cell.2 }}
+                        </div> {% endcomment %}
+                        <div class="block {% if cell.3 == 'absent' %}bg-absent{% elif cell.3 == 'leave' %}bg-leave{% else %}bg-normal{% endif %}" 
+                            onclick="toggleAbsent(this, '{{ cell.1 }}')" 
+                            data-id="{{ cell.1 }}">
+                            {{ cell.1 }}<br>
+                            {{ cell.2 }}
+                        </div>
+
+                        {% else %}
+                        <div class="empty"></div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- JS -->
+    <script src="{% static 'myapp/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        function toggleAbsent(block, studentId) {
+            const isAbsent = block.classList.contains('bg-absent');
+            const url = isAbsent ? '/unmark_absent/' : '/mark_absent/';
+        
+            {% comment %} console.log(document.querySelector('input[name="date"]').value) {% endcomment %}
+            const selectedDate = document.querySelector('input[name="date"]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ id: studentId, date: selectedDate })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (isAbsent) {
+                        block.classList.remove('bg-absent');
+                        block.classList.add('bg-normal');
+                    } else {
+                        block.classList.remove('bg-normal');
+                        block.classList.add('bg-absent');
+                    }
+                }
+            });
+        }
+        
+        function markAllAbsent() {
+            const activeTab = document.querySelector('.tab-pane.show.active');
+            const blocks = activeTab.querySelectorAll('.block.bg-normal');
+        
+            blocks.forEach(block => {
+                toggleAbsent(block, block.dataset.id);
+            });
+        }
+        
+        function cancelAllAbsent() {
+            const activeTab = document.querySelector('.tab-pane.show.active');
+            const blocks = activeTab.querySelectorAll('.block.bg-absent');
+        
+            blocks.forEach(block => {
+                toggleAbsent(block, block.dataset.id);
+            });
+        }
+        
+        // CSRF 토큰
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    
+</body>
+</html>

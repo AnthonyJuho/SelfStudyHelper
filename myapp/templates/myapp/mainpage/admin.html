@@ -1,0 +1,239 @@
+{% load static %}
+{% include 'myapp/common/header.html' %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>관리자 페이지</title>
+  <link href="{% static 'myapp/css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <!-- 탭 메뉴 -->
+  <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'upload' %}active{% endif %}" href="?tab=upload">엑셀 업로드</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'leave' %}active{% endif %}" href="?tab=leave">면학 이석자 조회</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'check' %}active{% endif %}" href="?tab=check">무단 이석자 조회</a>
+    </li>
+  </ul>
+
+  <div class="tab-content mt-3">
+    <!-- 엑셀 업로드 탭 -->
+    {% if active_tab == 'upload' %}
+    <div class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header bg-primary text-white">엑셀 파일 업로드</div>
+        <div class="card-body">
+          <form method="POST" enctype="multipart/form-data" action="{% url 'main' %}?tab=upload">
+            {% csrf_token %}
+            <div class="mb-3">
+              <input class="form-control" type="file" name="excel_file" required>
+            </div>
+            <button type="submit" class="btn btn-success">업로드 및 저장</button>
+          </form>
+
+          {% if upload_results %}
+          <div class="mt-4">
+            <h5>업로드 결과</h5>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>학번</th>
+                  <th>이름</th>
+                  <th>시작 날짜</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for result in upload_results %}
+                <tr>
+                  <td>{{ result.hakbun }}</td>
+                  <td>{{ result.kor_nm }}</td>
+                  <td>{{ result.start_date }}</td>
+                  <td>
+                    {% if result.status == '추가됨' %}
+                      <span class="badge bg-success">추가됨</span>
+                    {% elif result.status == '무단이석 취소' %}
+                      <span class="badge bg-primary">무단이석 취소</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">중복</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- LeaveList 조회 탭 -->
+    {% if active_tab == 'leave' %}
+    <div class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header bg-success text-white">LeaveList 조회</div>
+        <div class="card-body">
+          <form method="get" class="row g-3">
+            <input type="hidden" name="tab" value="leave">
+            <div class="col-md-5">
+              <input type="date" name="leave_start" class="form-control" value="{{ leave_start }}">
+            </div>
+            <div class="col-md-5">
+              <input type="date" name="leave_end" class="form-control" value="{{ leave_end }}">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100">검색</button>
+            </div>
+          </form>
+
+          <div class="table-responsive mt-3">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>학번</th>
+                  <th>이름</th>
+                  <th>사유</th>
+                  <th>시작 날짜</th>
+                  <th>시작 시간</th>
+                  <th>종료 날짜</th>
+                  <th>종료 시간</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in leave_page_obj %}
+                <tr>
+                  <td>{{ item.hakbun }}</td>
+                  <td>{{ item.kor_nm }}</td>
+                  <td>{{ item.reason }}</td>
+                  <td>{{ item.start_date }}</td>
+                  <td>{{ item.start_time }}</td>
+                  <td>{{ item.end_date }}</td>
+                  <td>{{ item.end_time }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- LeaveList 페이징 -->
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if leave_page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?tab=leave&leave_start={{ leave_start }}&leave_end={{ leave_end }}&leave_page={{ leave_page_obj.previous_page_number }}">이전</a>
+              </li>
+              {% endif %}
+              {% for page_num in leave_page_obj.paginator.page_range %}
+              <li class="page-item {% if page_num == leave_page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?tab=leave&leave_start={{ leave_start }}&leave_end={{ leave_end }}&leave_page={{ page_num }}">{{ page_num }}</a>
+              </li>
+              {% endfor %}
+              {% if leave_page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?tab=leave&leave_start={{ leave_start }}&leave_end={{ leave_end }}&leave_page={{ leave_page_obj.next_page_number }}">다음</a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- CheckList 조회 탭 -->
+    {% if active_tab == 'check' %}
+    <div class="tab-pane fade show active">
+      <div class="card">
+        <div class="card-header bg-info text-white">무단이석자 조회</div>
+        <div class="card-body">
+          <form method="get" class="row g-3">
+            <input type="hidden" name="tab" value="check">
+            <div class="col-md-5">
+              <input type="date" name="check_start" class="form-control" value="{{ check_start }}">
+            </div>
+            <div class="col-md-5">
+              <input type="date" name="check_end" class="form-control" value="{{ check_end }}">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100">검색</button>
+            </div>
+          </form>
+
+          <div class="table-responsive mt-3">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>학년</th>
+                  <th>학번</th>
+                  <th>이름</th>
+                  <th>내용</th>
+                  <th>날짜</th>
+                  <th>담임</th>
+                  <th>학생 메시지</th>
+                  <th>취소</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in check_page_obj %}
+                <tr>
+                  <td>{{ item.grade }}</td>
+                  <td>{{ item.id }}</td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.content }}</td>
+                  <td>{{ item.check_date }}</td>
+                  <td>{{ item.class_teacher }}</td>
+                  <td>{{ item.message|default:"-" }}</td>
+                  <td>
+                    <form method="post" action="{% url 'delete_absent' %}" onsubmit="return confirm('정말 이 무단이석 기록을 삭제하시겠습니까?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="id" value="{{ item.id }}">
+                      <input type="hidden" name="check_date" value="{{ item.check_date }}">
+                      <input type="hidden" name="tab" value="check">
+                      <button type="submit" class="btn btn-sm btn-danger">취소</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CheckList 페이징 -->
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if check_page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?tab=check&check_start={{ check_start }}&check_end={{ check_end }}&check_page={{ check_page_obj.previous_page_number }}">이전</a>
+              </li>
+              {% endif %}
+              {% for page_num in check_page_obj.paginator.page_range %}
+              <li class="page-item {% if page_num == check_page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?tab=check&check_start={{ check_start }}&check_end={{ check_end }}&check_page={{ page_num }}">{{ page_num }}</a>
+              </li>
+              {% endfor %}
+              {% if check_page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?tab=check&check_start={{ check_start }}&check_end={{ check_end }}&check_page={{ check_page_obj.next_page_number }}">다음</a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="{% static 'myapp/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

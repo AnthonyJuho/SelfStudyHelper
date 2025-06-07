@@ -1,0 +1,8 @@
+<div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded bg-white">
+    <div>
+      <strong>로그인 계정:</strong> {{ user.username }}
+    </div>
+    <div>
+      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">로그아웃</a>
+    </div>
+  </div>
